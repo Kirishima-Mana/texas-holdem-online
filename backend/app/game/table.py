@@ -133,10 +133,15 @@ class Table:
         # 更新庄家位置
         self.dealer_position = self._next_active_position(self.dealer_position)
 
-        # 小盲注 = 庄家下一个活跃位置
-        self.small_blind_position = self._next_active_position(self.dealer_position)
-        # 大盲注 = 小盲注下一个活跃位置
-        self.big_blind_position = self._next_active_position(self.small_blind_position)
+        active_count = len([p for p in self.players.values() if p.is_active])
+        if active_count == 2:
+            # Heads-up: 庄家 = 小盲注
+            self.small_blind_position = self.dealer_position
+            self.big_blind_position = self._next_active_position(self.dealer_position)
+        else:
+            # 正常: 小盲注 = 庄家下一个，大盲注 = 小盲注下一个
+            self.small_blind_position = self._next_active_position(self.dealer_position)
+            self.big_blind_position = self._next_active_position(self.small_blind_position)
 
         self.stage = "preflop"
 
