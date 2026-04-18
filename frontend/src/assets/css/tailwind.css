@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-900 text-gray-100;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  }
+  
+  .btn-primary {
+    @apply bg-poker-green hover:bg-green-700 text-white;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-700 hover:bg-gray-600 text-white;
+  }
+  
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white;
+  }
+  
+  .btn-success {
+    @apply bg-green-600 hover:bg-green-700 text-white;
+  }
+  
+  .card {
+    @apply bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700;
+  }
+  
+  .input {
+    @apply bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white 
+           focus:outline-none focus:ring-2 focus:ring-poker-green focus:border-transparent;
+  }
+  
+  .table-seat {
+    @apply absolute rounded-full border-2 border-gray-600 bg-gray-800 
+           flex items-center justify-center transition-all duration-300;
+  }
+  
+  .table-seat-active {
+    @apply border-poker-green shadow-lg shadow-poker-green/30;
+  }
+  
+  .table-seat-current {
+    @apply border-poker-gold animate-pulse-slow;
+  }
+  
+  .poker-card {
+    @apply w-16 h-24 rounded-lg shadow-lg flex items-center justify-center 
+           font-bold text-xl transition-transform duration-300;
+  }
+  
+  .poker-card-front {
+    @apply bg-white text-gray-900;
+  }
+  
+  .poker-card-back {
+    @apply bg-gradient-to-br from-red-600 to-blue-600 text-white;
+  }
+  
+  .chip {
+    @apply w-12 h-12 rounded-full flex items-center justify-center 
+           font-bold text-sm shadow-lg transition-transform duration-200;
+  }
+  
+  .chip-small {
+    @apply w-8 h-8 text-xs;
+  }
+  
+  .chip-white { @apply bg-white text-gray-900 border border-gray-300; }
+  .chip-red { @apply bg-red-500 text-white; }
+  .chip-blue { @apply bg-blue-500 text-white; }
+  .chip-green { @apply bg-green-500 text-white; }
+  .chip-black { @apply bg-gray-900 text-white border border-gray-700; }
+}

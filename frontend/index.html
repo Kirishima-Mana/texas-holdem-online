@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>德州扑克在线 - 熟人娱乐局</title>
+    <meta name="description" content="一个为熟人娱乐设计的在线德州扑克游戏，支持断线重连、旁观者上帝视角、锦标赛盲注模式">
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      
+      body {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      }
+      
+      /* 加载动画 */
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, #0a7e3a 0%, #1a1a1a 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.5s ease-out;
+      }
+      
+      .loading-screen.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .poker-chip {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+        color: #1a1a1a;
+        animation: chip-spin 2s linear infinite;
+        box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        margin-bottom: 30px;
+      }
+      
+      @keyframes chip-spin {
+        0% { transform: rotateY(0deg); }
+        100% { transform: rotateY(360deg); }
+      }
+      
+      .loading-text {
+        color: white;
+        font-size: 18px;
+        font-weight: 500;
+        margin-top: 20px;
+        text-align: center;
+      }
+      
+      .loading-dots:after {
+        content: '.';
+        animation: dots 1.5s steps(5, end) infinite;
+      }
+      
+      @keyframes dots {
+        0%, 20% { content: '.'; }
+        40% { content: '..'; }
+        60% { content: '...'; }
+        80%, 100% { content: ''; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 加载屏幕 -->
+    <div id="loading-screen" class="loading-screen">
+      <div class="poker-chip">♠</div>
+      <div class="loading-text">
+        正在加载德州扑克在线<span class="loading-dots"></span>
+      </div>
+    </div>
+    
+    <!-- Vue应用挂载点 -->
+    <div id="app"></div>
+    
+    <script type="module">
+      // 隐藏加载屏幕
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const loadingScreen = document.getElementById('loading-screen')
+          if (loadingScreen) {
+            loadingScreen.classList.add('fade-out')
+            setTimeout(() => {
+              loadingScreen.style.display = 'none'
+            }, 500)
+          }
+        }, 1000)
+      })
+      
+      // 处理页面可见性变化
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          // 页面重新可见，可以尝试重新连接WebSocket
+          console.log('页面重新可见')
+        }
+      })
+      
+      // 阻止意外离开
+      window.addEventListener('beforeunload', (e) => {
+        // 如果游戏进行中，提示用户
+        const isGameActive = localStorage.getItem('poker_game_active')
+        if (isGameActive === 'true') {
+          e.preventDefault()
+          e.returnValue = '游戏正在进行中，确定要离开吗？'
+        }
+      })
+    </script>
+  </body>
+</html>
