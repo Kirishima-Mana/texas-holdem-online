@@ -33,5 +33,8 @@ async def get_db() -> AsyncSession:
 
 async def init_db():
     """初始化数据库，创建所有表"""
+    import os
+    db_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+    os.makedirs(db_dir, exist_ok=True)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
