@@ -11,10 +11,10 @@ class Settings(BaseSettings):
     # 服务器配置
     host: str = "0.0.0.0"
     port: int = 8000
-    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    cors_origins: str = "http://localhost:5173,http://localhost:3000"
     
     # 数据库配置
-    database_url: str = "sqlite+aiosqlite:///data/texas_holdem.db"
+    database_url: str = "sqlite+aiosqlite:///./texas_holdem.db"
     
     # WebSocket 配置
     websocket_ping_interval: int = 20

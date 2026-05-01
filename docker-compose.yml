@@ -6,7 +6,7 @@ services:
     container_name: texas-holdem-backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     environment:
       - DEBUG=false
       - DATABASE_URL=sqlite+aiosqlite:///./texas_holdem.db
@@ -28,12 +28,9 @@ services:
     container_name: texas-holdem-frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "${FRONTEND_PORT:-8888}:80"
     depends_on:
       - backend
-    environment:
-      - VITE_API_URL=http://localhost:8000
-      - VITE_WS_URL=ws://localhost:8000
     networks:
       - poker-network
 

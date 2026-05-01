@@ -2,7 +2,8 @@ import axios from 'axios'
 import type { AuthResponse, RoomInfo } from '@/types/game'
 import { useAuthStore } from '@/stores/auth'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// 生产环境使用相对路径（由 nginx 反向代理），开发环境使用环境变量
+const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

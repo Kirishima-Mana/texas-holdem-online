@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { GameStatus, RoomInfo, ChatMessage, PlayerInfo } from '@/types/game'
+import { useAuthStore } from '@/stores/auth'
 
 export const useGameStore = defineStore('game', () => {
   // 游戏状态

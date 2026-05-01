@@ -3,8 +3,6 @@ import type { WSMessage, GameStatus, RoomInfo, ChatMessage, ActionRequest } from
 import { useAuthStore } from '@/stores/auth'
 import { useGameStore } from '@/stores/game'
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000'
-
 class WebSocketService {
   private socket: WebSocket | null = null
   private reconnectAttempts = 0
@@ -16,6 +14,17 @@ class WebSocketService {
   // 连接状态
   isConnected = ref(false)
   connectionError = ref<string | null>(null)
+
+  // 动态构建 WebSocket URL
+  private getWsUrl(): string {
+    // 开发环境使用环境变量
+    if (import.meta.env.DEV && import.meta.env.VITE_WS_URL) {
+      return import.meta.env.VITE_WS_URL
+    }
+    // 生产环境根据当前页面地址构建（由 nginx 反向代理处理 /ws）
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${protocol}//${window.location.host}`
+  }
 
   // 连接WebSocket
   connect(): Promise<void> {
@@ -37,7 +46,7 @@ class WebSocketService {
       this.connectionError.value = null
 
       try {
-        const wsUrl = `${WS_URL}/ws?token=${encodeURIComponent(token)}`
+        const wsUrl = `${this.getWsUrl()}/ws?token=${encodeURIComponent(token)}`
         this.socket = new WebSocket(wsUrl)
 
         this.socket.onopen = () => {

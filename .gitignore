@@ -1,54 +1,37 @@
-# Python
+# ========================
+# 1. 安全与机密 (InfoSec)
+# ========================
+.env
+.env.*
+*.pem
+*.key
+
+# ========================
+# 2. 前端 (Vue/Vite/Node)
+# ========================
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+
+# ========================
+# 3. 后端 (FastAPI/Python)
+# ========================
 __pycache__/
 *.py[cod]
 *$py.class
-*.egg-info/
-dist/
-build/
-*.egg
-.eggs/
+.venv/
 venv/
 env/
-.venv/
-
-# Database
-*.db
-*.sqlite3
-
-# Logs
-*.log
-logs/
-
-# Environment
-.env
-.env.local
-.env.production
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Node
-node_modules/
-frontend/node_modules/
-frontend/dist/
-frontend/.temp/
-
-# Data
 backend/data/
 backend/logs/
+texas_holdem.db
 
-# Docker
-docker-compose.override.yml
-
-# Secrets
-*.pem
-*.key
-*.cert
+# ========================
+# 4. 操作系统与编辑器垃圾
+# ========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
