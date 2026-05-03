@@ -383,3 +383,49 @@
 1. 底池从 felt 内 `top-[10%]` 移到牌桌上方外部独立行（`justify-center`）
 2. 公共牌 `size="lg"`(5×7.5rem) → `size="md"`(4×6rem)，空牌位同步缩小
 3. `types/game.ts` `SUIT_COLORS['s']` 从 `text-gray-100` → `text-gray-900`（黑桃黑色）
+
+### 2026-05-03 — 房主丢失死锁修复（第二十一轮）
+
+**问题**：场上出现没有房主的情况，游戏进入死锁（无人能开始新局）。
+
+**根因**：4 个独立 bug 叠加：
+1. `table.py:remove_player` — 最后一个玩家离开时 `self.players` 为空，host 不转移也不重置，`host_user_id` 指向已离开的旧玩家
+2. `table.py:add_player` — 只检查 `host_user_id is None`，不验证该 ID 是否还有效
+3. `engine.py:handle_player_disconnect` — 房主断线转让时，如果没有任何 `is_connected` 玩家，转让静默跳过
+4. `table.py:remove_player` — 转让 host 给 `min(players.keys())` 不考虑连接状态
+
+**修复**：
+1. `remove_player`：优先转让给在线玩家，牌桌为空时 `host_user_id = None`，同时清除旧房主 `is_host`
+2. `add_player`：增加 `host_user_id not in self.player_positions` 验证，无效时清除旧标记并指定新房主
+3. `handle_player_disconnect`：增加两级 fallback（在线活跃 → 任意活跃 → 清空 host）
+4. `get_room_info`：每次查询自动检测并修复房主不一致状态（`host_user_id` vs `is_host` 标记）
+
+### 2026-05-03 — Lobby.vue script setup 丢失修复（第二十二轮）
+
+**问题**：添加"规则说明"按钮后 Lobby 只显示深蓝色背景，所有内容消失。
+
+**根因**：Lobby.vue 的 `<script setup>` 部分被完全删除，文件在 `</template>` 后直接结束。Vue 组件无脚本无法初始化。
+
+**修复**：重建完整 `<script setup>` 部分，恢复所有 ref、computed、函数、import、onMounted 逻辑。新增 `showRules` ref 控制规则说明弹窗。
+
+### 2026-05-03 — 摊牌面板无赢家 + 底池遮挡修复（第二十三轮）
+
+**问题 A**：摊牌结算面板不显示赢家信息和获胜手牌。
+**根因**：`showdownWinner` 计算属性 `data.players.find(p => p.user_id === data.winner)` — `data.winner` 是完整对象 `{user_id, username, ...}` 而非 user_id 数字，比较永远为 `false`。
+**修复**：直接返回 `data.winner`（后端已发完整赢家对象）；增加 fallback 按 score 排序取第一名；后端增加空 hand fallback 确保永远有 showdown 数据。
+
+**问题 B**：底池显示框被顶部玩家手牌遮挡。
+**根因**：底池在 felt div 内部（独立 stacking context），玩家座位在 felt 外部（z-25），felt 默认 z-auto → 玩家座位永远在桌面之上。
+**修复**：将底池从 felt 内部移到主容器（felt 外），z-40（高于玩家 z-25）。
+
+### 2026-05-03 — 牌桌 UI 彻底重构（第二十四轮）
+
+**问题**：底池遮挡问题反复出现，牌桌与玩家区域布局耦合。
+
+**修复**：彻底重构牌桌布局，将牌桌与玩家区域分离。
+1. **实木边框牌桌**：多层 `linear-gradient` 棕色渐变模拟木纹（`#b87333` → `#8b4e23` → `#6d3515`），`#4a2512` 深色包边，圆形阴影立体感
+2. **深绿绒面**：`radial-gradient`（`#1a7a3a` → `#0a3d1a`），暗纹纹理
+3. **牌桌缩小**：高度 `h-[22rem] sm:h-[24rem] lg:h-[26rem]`（原 26-30rem），占容器 72%（`top/bottom/left/right: 14%`），四周留出 28% 边距
+4. **玩家区域完全外置**：8 座分布在容器边缘（3%-96%），所有座位中心在牌桌轨道之外，手牌和信息面板永不与桌面重叠
+5. **Dealer 标记固定桌面位置**：预设 8 个方向的内侧坐标
+6. **Tailwind 扩展**：`zIndex: { '25': '25', '35': '35' }`
