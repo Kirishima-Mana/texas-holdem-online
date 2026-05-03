@@ -729,17 +729,20 @@ class GameEngine:
         if self.table.stage == "showdown":
             player_hands = []
             for pos, p in self.table.players.items():
-                if p.is_active and p.hole_cards:
+                if p.is_active and not p.is_folded:
                     try:
-                        if len(self.table.community_cards) >= 3:
+                        if p.hole_cards and len(self.table.community_cards) >= 3:
                             score, rank = evaluator.evaluate_hand(p.hole_cards, self.table.community_cards)
-                        else:
-                            # 不足 5 张牌时，所有活跃玩家平局
+                        elif p.hole_cards:
+                            # 公共牌不足 3 张但手牌存在
                             score, rank = (0, "自动获胜")
+                        else:
+                            # 无手牌（断线等情况）
+                            score, rank = (9999, "无手牌")
                         player_hands.append({
                             "user_id": p.user_id,
                             "username": p.username,
-                            "hole_cards": p.hole_cards,
+                            "hole_cards": p.hole_cards or [],
                             "hand_rank": rank,
                             "score": score
                         })
@@ -748,7 +751,7 @@ class GameEngine:
                         player_hands.append({
                             "user_id": p.user_id,
                             "username": p.username,
-                            "hole_cards": p.hole_cards,
+                            "hole_cards": p.hole_cards or [],
                             "hand_rank": "?",
                             "score": 9999
                         })
@@ -758,5 +761,18 @@ class GameEngine:
                     "players": player_hands,
                     "winner": player_hands[0]
                 }
+            else:
+                # fallback: 未能正常评估手牌时，从活跃玩家中找一个作为 "赢家"
+                fallback_players = [
+                    {"user_id": p.user_id, "username": p.username, "hole_cards": p.hole_cards or [],
+                     "hand_rank": "自动获胜" if not p.is_folded else "已弃牌", "score": 0 if not p.is_folded else 9999}
+                    for p in self.table.players.values() if p.is_active
+                ]
+                if fallback_players:
+                    fallback_players.sort(key=lambda x: x["score"])
+                    state["showdown"] = {
+                        "players": fallback_players,
+                        "winner": fallback_players[0]
+                    }
 
         return state

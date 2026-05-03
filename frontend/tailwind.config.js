@@ -6,6 +6,10 @@ export default {
   ],
   theme: {
     extend: {
+      zIndex: {
+        '25': '25',
+        '35': '35',
+      },
       colors: {
         poker: {
           green: '#0a7e3a',

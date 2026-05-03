@@ -21,7 +21,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
         <!-- 牌桌主区域 -->
         <div class="lg:col-span-3 order-2 lg:order-1">
-          <div class="card p-4">
+          <div class="card p-3 sm:p-4">
             <!-- 牌桌头部 -->
             <div class="flex justify-between items-center mb-3">
               <h2 class="text-lg font-bold">牌桌</h2>
@@ -39,30 +39,29 @@
               </div>
             </div>
 
-            <!-- 底池显示（牌桌外上方） -->
-            <div v-if="gameStore.gameStatus.table_state && gameStore.gameStatus.table_state.pot_amount > 0"
-              class="flex justify-center mb-1">
-              <div class="px-4 py-1 bg-gray-800/95 rounded-full border border-poker-gold/40 text-center">
-                <span class="text-xs text-gray-400 mr-1">底池</span>
-                <span class="text-sm font-bold text-poker-gold">{{ gameStore.gameStatus.table_state.pot_amount.toLocaleString() }}</span>
-              </div>
-            </div>
+            <!-- 牌桌容器（开阔布局，玩家在桌外） -->
+            <div class="relative h-[22rem] sm:h-[24rem] lg:h-[26rem] mb-4 select-none overflow-visible">
 
-            <!-- 专业扑克牌桌 -->
-            <div class="relative h-80 sm:h-[26rem] lg:h-[30rem] mb-4 select-none">
-              <!-- 牌桌轨道（Rail） -->
-              <div class="absolute inset-0 rounded-[45%]"
-                style="background: radial-gradient(ellipse at center, #1a1a2e 0%, #0d0d1a 100%); border: 10px solid #1a1a22; box-shadow: 0 0 40px rgba(0,0,0,0.5);">
+              <!-- 实木牌桌边框 (Rail) — 温暖木纹 -->
+              <div class="absolute rounded-[42%] shadow-2xl"
+                style="top: 14%; left: 14%; right: 14%; bottom: 14%;
+                  background: linear-gradient(175deg, #b87333 0%, #9c5a2a 8%, #8b4e23 16%, #a0623b 25%,
+                    #7a3f1a 35%, #9c5a2a 45%, #8b4e23 55%, #6d3515 65%,
+                    #8b4e23 75%, #a0623b 85%, #7a3f1a 92%, #6d3515 100%);
+                  border: 5px solid #4a2512;
+                  box-shadow: 0 0 30px rgba(0,0,0,0.6), inset 0 0 12px rgba(0,0,0,0.3);">
               </div>
-              <!-- 牌桌绒布面（Felt） -->
-              <div class="absolute rounded-[43%]"
-                style="top: 14px; left: 14px; right: 14px; bottom: 14px; background: radial-gradient(ellipse at center, #1a6b3c 0%, #0f4a28 40%, #0a3d1f 100%);">
-                <!-- 绒布纹理 -->
-                <div class="absolute inset-0 opacity-10"
-                  style="background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px);">
+
+              <!-- 绒布面 (Felt) — 深绿色 -->
+              <div class="absolute rounded-[40%]"
+                style="top: calc(14% + 16px); left: calc(14% + 16px); right: calc(14% + 16px); bottom: calc(14% + 16px);
+                  background: radial-gradient(ellipse at center, #1a7a3a 0%, #0f5628 35%, #0a3d1a 100%);">
+                <!-- 绒布暗纹 -->
+                <div class="absolute inset-0 opacity-8 rounded-[40%]"
+                  style="background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.02) 3px, rgba(255,255,255,0.02) 6px);">
                 </div>
 
-                <!-- 公共牌区域（牌桌正中央） -->
+                <!-- 公共牌区域（正中） -->
                 <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
                   <div class="flex justify-center items-center space-x-1.5">
                     <PokerCard
@@ -82,60 +81,66 @@
                   </div>
                 </div>
 
-                <!-- 庄家按钮 -->
+                <!-- 底池显示（牌桌内上方） -->
+                <div v-if="gameStore.gameStatus.table_state && gameStore.gameStatus.table_state.pot_amount > 0"
+                  class="absolute top-[15%] left-1/2 transform -translate-x-1/2 z-30">
+                  <div class="px-3 py-0.5 bg-gray-900/90 rounded-full border border-poker-gold/50 text-center shadow">
+                    <span class="text-[10px] text-gray-400 mr-0.5">底池</span>
+                    <span class="text-xs font-bold text-poker-gold">{{ gameStore.gameStatus.table_state.pot_amount.toLocaleString() }}</span>
+                  </div>
+                </div>
+
+                <!-- 庄家按钮 (D) -->
                 <div v-if="gameStore.gameStatus.table_state"
                   :style="dealerBtnStyle()"
-                  class="absolute z-30 w-8 h-8 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center text-xs font-bold text-gray-700 shadow-lg"
+                  class="absolute z-30 w-7 h-7 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center text-[10px] font-bold text-gray-700 shadow"
                   style="transform: translate(-50%, -50%);">
                   D
                 </div>
-              </div><!-- 绒布面结束 -->
+              </div><!-- /Felt -->
 
-              <!-- 玩家座位（在绒布之外，手牌溢出到 rail 上方） -->
+              <!-- 牌桌外玩家区域（8座，绝不对牌桌重叠） -->
               <div
                 v-for="player in gameStore.gameStatus.table_state?.players || []"
                 :key="'seat-' + player.position"
                 :style="getSeatStyle(player.position)"
                 class="absolute z-25"
               >
-                  <!-- 手牌区域 -->
-                  <div v-if="player.cards && player.cards.length && !player.is_folded" class="flex justify-center -space-x-1 mb-2">
+                  <!-- 手牌 -->
+                  <div v-if="player.cards && player.cards.length && !player.is_folded" class="flex justify-center -space-x-1 mb-1.5">
                     <PokerCard
                       v-for="(card, idx) in player.cards"
                       :key="'hole-' + player.position + '-' + idx"
                       :card="card"
                       size="sm"
                       :show-back="false"
-                      :rotation="idx === 0 ? -4 : 4"
+                      :rotation="idx === 0 ? -3 : 3"
                       class="animate-deal-in"
                       :style="{ animationDelay: (0.2 + idx * 0.15) + 's' }"
                     />
                   </div>
-                  <!-- 弃牌后的暗色卡背 -->
-                  <div v-else-if="player.is_folded && player.cards && player.cards.length" class="flex justify-center -space-x-1 mb-2 opacity-40">
+                  <div v-else-if="player.is_folded && player.cards && player.cards.length" class="flex justify-center -space-x-1 mb-1.5 opacity-40">
                     <PokerCard
                       v-for="(card, idx) in player.cards"
                       :key="'hole-' + player.position + '-' + idx"
                       :card="card"
                       size="sm"
                       :show-back="true"
-                      :rotation="idx === 0 ? -4 : 4"
+                      :rotation="idx === 0 ? -3 : 3"
                     />
                   </div>
 
-                  <!-- 玩家信息面板（紧凑） -->
+                  <!-- 玩家面板 -->
                   <div :class="[
                     'relative px-2 py-1 rounded-lg text-center min-w-[4.5rem] transition-all duration-300',
                     playerBg(player)
                   ]">
-                    <!-- 行动标签 -->
                     <div v-if="actionLabel(player)" :class="[
                       'absolute -top-2.5 left-1/2 transform -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] font-bold text-white whitespace-nowrap shadow',
                       actionTagColor(player)
                     ]">
                       {{ actionLabel(player) }}
                     </div>
-                    <!-- 玩家名 -->
                     <div class="flex items-center justify-center space-x-0.5">
                       <span class="w-1 h-1 rounded-full" :class="player.is_connected ? 'bg-green-400' : 'bg-red-500'"></span>
                       <span class="font-bold text-xs truncate max-w-[4rem]"
@@ -144,9 +149,7 @@
                       </span>
                       <span v-if="player.is_host" class="text-poker-gold text-[10px]" title="房主">★</span>
                     </div>
-                    <!-- 筹码 -->
                     <div class="text-[11px] text-gray-300 mt-0.5 font-mono">{{ formatChips(player.chips) }}</div>
-                    <!-- 当前下注 -->
                     <div v-if="player.current_bet > 0" class="text-[11px] text-poker-gold mt-0.5 animate-chip-in font-semibold">
                       +{{ player.current_bet.toLocaleString() }}
                     </div>
@@ -275,20 +278,50 @@
     </div>
 
     <!-- 摊牌结算面板 -->
-    <div v-if="showShowdown" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" @click="showShowdown = false">
-      <div class="card w-full max-w-lg" @click.stop>
+    <div v-if="showShowdown" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" @click.self="showShowdown = false">
+      <div class="card w-full max-w-xl max-h-[90vh] overflow-y-auto" @click.stop>
         <h3 class="text-2xl font-bold text-poker-gold text-center mb-4">摊牌结算</h3>
-        <div class="text-center text-gray-300 text-sm">获胜牌型：<span class="text-poker-gold font-bold text-lg">{{ showdownWinner?.hand_rank || '' }}</span></div>
-        <div class="text-center mt-2"><span class="text-xl font-bold text-poker-gold">{{ showdownWinner?.username || '' }}</span><span class="text-gray-400 ml-2">赢得底池</span></div>
-        <div class="grid grid-cols-2 gap-3 mt-3">
-          <div v-for="p in showdownPlayers" :key="p.user_id" :class="['p-3 rounded-lg border text-center', p.user_id === showdownWinner?.user_id ? 'border-poker-gold bg-poker-gold/10' : 'border-gray-600 bg-gray-800']">
-            <div class="font-bold text-sm" :class="p.user_id === showdownWinner?.user_id ? 'text-poker-gold' : 'text-gray-300'">{{ p.username }}</div>
-            <div class="flex justify-center space-x-1 my-2"><PokerCard v-for="(card, idx) in (p.hole_cards || [])" :key="idx" :card="card" size="sm" /></div>
-            <div class="text-xs" :class="p.user_id === showdownWinner?.user_id ? 'text-poker-gold' : 'text-gray-400'">{{ p.hand_rank || '' }}</div>
+
+        <!-- 公共牌 -->
+        <div class="text-center mb-3">
+          <div class="text-xs text-gray-400 mb-1">公共牌</div>
+          <div class="flex justify-center space-x-2">
+            <PokerCard v-for="(card, idx) in (gameStore.gameStatus.table_state?.community_cards || [])" :key="'sd-'+idx" :card="card" size="sm" />
           </div>
         </div>
-        <div class="flex justify-center space-x-2 mt-2"><div v-for="(card, idx) in (gameStore.gameStatus.table_state?.community_cards || [])" :key="'sd-'+idx"><PokerCard :card="card" size="sm" /></div></div>
-        <button @click="showShowdown = false" class="btn btn-primary w-full mt-2">继续</button>
+
+        <!-- 赢家区域 -->
+        <div v-if="showdownWinner" class="bg-poker-gold/10 border-2 border-poker-gold rounded-lg p-4 mb-3 text-center">
+          <div class="text-sm text-gray-400 mb-1">获胜玩家</div>
+          <div class="text-2xl font-bold text-poker-gold mb-1">{{ showdownWinner.username }}</div>
+          <div class="text-sm text-gray-300">
+            牌型：<span class="text-poker-gold font-bold">{{ showdownWinner.hand_rank }}</span>
+          </div>
+          <div class="text-sm text-gray-300 mt-1">
+            赢得底池：<span class="text-poker-gold font-bold text-lg">{{ (gameStore.gameStatus.table_state?.pot_amount || 0).toLocaleString() }}</span>
+          </div>
+          <div class="flex justify-center space-x-1 mt-2">
+            <PokerCard v-for="(card, idx) in (showdownWinner.hole_cards || [])" :key="'winner-'+idx" :card="card" size="md" />
+          </div>
+        </div>
+        <div v-else class="text-center text-gray-400 py-4">所有玩家均已弃牌</div>
+
+        <!-- 所有摊牌玩家对比 -->
+        <div v-if="showdownPlayers.length > 1" class="border-t border-gray-700 pt-3 mt-3">
+          <div class="text-xs text-gray-400 mb-2 text-center">所有摊牌玩家</div>
+          <div class="grid grid-cols-2 gap-2">
+            <div v-for="p in showdownPlayers" :key="p.user_id"
+              :class="['p-2 rounded-lg border text-center', p.user_id === showdownWinner?.user_id ? 'border-poker-gold bg-poker-gold/10' : 'border-gray-600 bg-gray-800']">
+              <div class="font-bold text-sm" :class="p.user_id === showdownWinner?.user_id ? 'text-poker-gold' : 'text-gray-300'">{{ p.username }}</div>
+              <div class="flex justify-center space-x-1 my-1">
+                <PokerCard v-for="(card, idx) in (p.hole_cards || [])" :key="idx" :card="card" size="xs" />
+              </div>
+              <div class="text-[10px]" :class="p.user_id === showdownWinner?.user_id ? 'text-poker-gold' : 'text-gray-400'">{{ p.hand_rank || '' }}</div>
+            </div>
+          </div>
+        </div>
+
+        <button @click="showShowdown = false" class="btn btn-primary w-full mt-3">继续</button>
       </div>
     </div>
 
@@ -382,8 +415,15 @@ const showShowdown = computed({
 
 const showdownWinner = computed(() => {
   const data = gameStore.showdownData
-  if (!data?.players) return null
-  return data.players.find((p: any) => p.user_id === data.winner) || null
+  if (!data) return null
+  // 优先使用 winner 字段
+  if (data.winner) return data.winner
+  // fallback: 从 players 中找最低分的
+  if (data.players?.length) {
+    const sorted = [...data.players].sort((a: any, b: any) => (a.score ?? 9999) - (b.score ?? 9999))
+    return sorted[0] || null
+  }
+  return null
 })
 
 const showdownPlayers = computed(() => {
@@ -420,30 +460,31 @@ const actionTagColor = (player: any) => {
 
 const dealerBtnStyle = () => {
   const pos = gameStore.gameStatus.table_state?.dealer_position ?? 0
-  const seatStyle = getSeatStyle(pos)
-  const offsets = [
-    { left: seatStyle.left, top: `calc(${seatStyle.top} + 2.5rem)` },
-    { left: `calc(${seatStyle.left} + 3rem)`, top: seatStyle.top },
-    { left: `calc(${seatStyle.left} + 2.5rem)`, top: seatStyle.top },
-    { left: `calc(${seatStyle.left} + 2.5rem)`, top: `calc(${seatStyle.top} - 1rem)` },
-    { left: seatStyle.left, top: `calc(${seatStyle.top} - 3rem)` },
-    { left: `calc(${seatStyle.left} - 3rem)`, top: seatStyle.top },
-    { left: `calc(${seatStyle.left} - 2.5rem)`, top: seatStyle.top },
-    { left: `calc(${seatStyle.left} - 2.5rem)`, top: `calc(${seatStyle.top} - 1rem)` },
+  // Dealer 按钮在桌面上，靠近对应玩家座位方向的桌边
+  const btnPositions = [
+    { top: '18%', left: '50%' },
+    { top: '24%', left: '76%' },
+    { top: '50%', left: '78%' },
+    { top: '74%', left: '76%' },
+    { top: '80%', left: '50%' },
+    { top: '74%', left: '24%' },
+    { top: '50%', left: '22%' },
+    { top: '24%', left: '24%' },
   ]
-  return offsets[pos % 8]
+  return btnPositions[pos % 8]
 }
 
 const getSeatStyle = (position: number) => {
+  // 8 座围绕牌桌，完全在桌外（桌面 rail 占 14%-86%）
   const positions = [
-    { top: '2%', left: '50%', transform: 'translate(-50%, -50%)' },
-    { top: '12%', left: '82%', transform: 'translate(-50%, -50%)' },
-    { top: '50%', left: '93%', transform: 'translate(-50%, -50%)' },
-    { top: '82%', left: '82%', transform: 'translate(-50%, -50%)' },
-    { top: '95%', left: '50%', transform: 'translate(-50%, -50%)' },
-    { top: '82%', left: '18%', transform: 'translate(-50%, -50%)' },
-    { top: '50%', left: '7%', transform: 'translate(-50%, -50%)' },
-    { top: '12%', left: '18%', transform: 'translate(-50%, -50%)' },
+    { top: '3%', left: '50%', transform: 'translate(-50%, -50%)' },
+    { top: '8%', left: '88%', transform: 'translate(-50%, -50%)' },
+    { top: '50%', left: '95%', transform: 'translate(-50%, -50%)' },
+    { top: '90%', left: '88%', transform: 'translate(-50%, -50%)' },
+    { top: '96%', left: '50%', transform: 'translate(-50%, -50%)' },
+    { top: '90%', left: '12%', transform: 'translate(-50%, -50%)' },
+    { top: '50%', left: '5%', transform: 'translate(-50%, -50%)' },
+    { top: '8%', left: '12%', transform: 'translate(-50%, -50%)' },
   ]
   return positions[position % 8]
 }
@@ -494,6 +535,17 @@ const scrollChatToBottom = () => {
 }
 
 watch(() => gameStore.chatMessages.length, scrollChatToBottom)
+
+// 调试：监听摊牌数据
+watch(() => gameStore.showdownData, (data) => {
+  if (data) {
+    console.log('showdownData arrived:', JSON.stringify(data))
+    console.log('winner:', data.winner)
+    console.log('players:', data.players?.length)
+  } else {
+    console.log('showdownData cleared')
+  }
+}, { deep: true })
 
 onMounted(async () => {
   if (!authStore.isAuthenticated) {
