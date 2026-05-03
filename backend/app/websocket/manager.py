@@ -505,6 +505,36 @@ class WebSocketManager:
                 host_player = player
                 break
 
+        # 自动修复：如果有 host_user_id 但没找到 host_player，尝试重置
+        if not host_player and self.game_engine.table.host_user_id is not None:
+            host_id = self.game_engine.table.host_user_id
+            # 尝试从 table.players 找到该玩家
+            for player in table_players.values():
+                if player.user_id == host_id and player.is_active:
+                    player.is_host = True
+                    host_player = player
+                    logger.info(f"get_room_info 自动修复: 恢复 {player.username} 的房主身份")
+                    break
+            # 如果找不到，从在线玩家中选一个
+            if not host_player and table_players:
+                for player in table_players.values():
+                    if player.is_active and player.is_connected:
+                        player.is_host = True
+                        self.game_engine.table.host_user_id = player.user_id
+                        host_player = player
+                        logger.info(f"get_room_info 自动修复: 指定 {player.username} 为新任房主")
+                        break
+            # 最后手段：任意活跃玩家
+            if not host_player and table_players:
+                player = next(iter(table_players.values()))
+                player.is_host = True
+                self.game_engine.table.host_user_id = player.user_id
+                host_player = player
+                logger.info(f"get_room_info 自动修复: 指定 {player.username} 为房主（last resort）")
+            # 完全没有人
+            if not host_player:
+                self.game_engine.table.host_user_id = None
+
         return {
             "player_count": len(table_players),
             "spectator_count": max(0, connected_count - len(table_players)),

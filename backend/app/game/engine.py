@@ -627,12 +627,28 @@ class GameEngine:
         # 房主转让：转让给下一个在线的活跃玩家
         if was_host:
             player.is_host = False
+            transferred = False
+            # 第一优先：在线活跃玩家
             for p in self.table.players.values():
                 if p.is_active and p.is_connected and p.user_id != user_id:
                     p.is_host = True
                     self.table.host_user_id = p.user_id
                     logger.info(f"房主权限转让给 {p.username}")
+                    transferred = True
                     break
+            # 第二优先：任意活跃玩家（包括断线的）
+            if not transferred:
+                for p in self.table.players.values():
+                    if p.is_active and p.user_id != user_id:
+                        p.is_host = True
+                        self.table.host_user_id = p.user_id
+                        logger.info(f"房主权限转让给 {p.username}（已断线）")
+                        transferred = True
+                        break
+            # 无人可转让
+            if not transferred:
+                self.table.host_user_id = None
+                logger.info("没有其他玩家可转让房主，房主清空")
 
         # 如果玩家正在行动，自动弃牌
         if (self.is_game_active and

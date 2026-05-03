@@ -74,8 +74,15 @@ class Table:
         self.players[position] = player
         self.player_positions[player.user_id] = position
         
-        # 如果是第一个玩家，设为房主
-        if self.host_user_id is None:
+        # 如果没有有效房主，设为房主
+        need_host = (
+            self.host_user_id is None or
+            self.host_user_id not in self.player_positions
+        )
+        if need_host:
+            # 清除旧房主标记（如果存在）
+            for p in self.players.values():
+                p.is_host = False
             self.host_user_id = player.user_id
             player.is_host = True
         
@@ -91,14 +98,25 @@ class Table:
         
         if player:
             del self.player_positions[user_id]
-            
+
             # 如果移除的是房主，转移房主权限
-            if user_id == self.host_user_id and self.players:
-                # 转移给位置最小的玩家
-                new_host_position = min(self.players.keys())
-                new_host = self.players[new_host_position]
-                new_host.is_host = True
-                self.host_user_id = new_host.user_id
+            if user_id == self.host_user_id:
+                player.is_host = False
+                if self.players:
+                    # 优先转给在线玩家，其次才是任意玩家
+                    new_host = None
+                    for pos in sorted(self.players.keys()):
+                        p = self.players[pos]
+                        if p.is_connected:
+                            new_host = p
+                            break
+                    if not new_host:
+                        new_host = self.players[min(self.players.keys())]
+                    new_host.is_host = True
+                    self.host_user_id = new_host.user_id
+                else:
+                    # 牌桌为空，重置房主
+                    self.host_user_id = None
             
             # 如果不保留筹码，清空
             if not keep_chips:
