@@ -9,9 +9,11 @@
     :style="cardStyle"
     @click="$emit('click')"
   >
-    <div v-if="showBack" class="text-center">
-      <div class="text-2xl">♠</div>
-      <div class="text-xs mt-1">TEXAS</div>
+    <div v-if="showBack" class="text-center w-full h-full rounded-lg flex flex-col items-center justify-center"
+      style="background: repeating-linear-gradient(45deg, #1e3a5f, #1e3a5f 4px, #234b7a 4px, #234b7a 8px);">
+      <div class="w-3/4 h-3/4 rounded border-2 border-blue-400/40 flex items-center justify-center bg-blue-900/60">
+        <span class="text-blue-300 text-xl">♠</span>
+      </div>
     </div>
     
     <div v-else class="text-center">
@@ -57,6 +59,7 @@ const cardInfo = computed(() => formatCard(props.card))
 // 卡片样式
 const cardStyle = computed(() => {
   const sizeMap = {
+    xs: { width: '2.25rem', height: '3.25rem', fontSize: '0.75rem' },
     sm: { width: '3rem', height: '4.5rem', fontSize: '0.875rem' },
     md: { width: '4rem', height: '6rem', fontSize: '1rem' },
     lg: { width: '5rem', height: '7.5rem', fontSize: '1.25rem' }

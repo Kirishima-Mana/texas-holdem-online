@@ -74,7 +74,17 @@ class WebSocketService {
           this.isConnected.value = false
           this.isConnecting = false
           this.stopHeartbeat()
-          
+
+          // 1008 = 认证失败（token 过期或无效），需要重新登录
+          if (event.code === 1008) {
+            console.warn('WebSocket 认证失败，需要重新登录')
+            const authStore = useAuthStore()
+            authStore.logout()
+            this.reconnectAttempts = this.maxReconnectAttempts // 阻止重连
+            window.location.href = '/login'
+            return
+          }
+
           // 如果不是正常关闭，尝试重连
           if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnect()
@@ -238,6 +248,14 @@ class WebSocketService {
     this.send({
       type: 'start_game',
       data: {}
+    })
+  }
+
+  // 踢出玩家
+  kickPlayer(userId: number): void {
+    this.send({
+      type: 'kick_player',
+      data: { user_id: userId }
     })
   }
 }

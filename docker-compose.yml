@@ -9,7 +9,7 @@ services:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
       - DEBUG=false
-      - DATABASE_URL=sqlite+aiosqlite:///./texas_holdem.db
+      - DATABASE_URL=sqlite+aiosqlite:///./data/texas_holdem.db
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
     volumes:
       - ./backend/data:/app/data

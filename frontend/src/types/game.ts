@@ -109,9 +109,10 @@ export const CARD_RANKS = {
   'A': 'A'
 } as const
 
+// 四色牌：黑桃=黑，红心=红，梅花=绿，方块=蓝
 export const SUIT_COLORS = {
   'h': 'text-red-500',
-  'd': 'text-red-500',
-  'c': 'text-gray-300',
-  's': 'text-gray-300'
+  'd': 'text-blue-400',
+  'c': 'text-green-400',
+  's': 'text-gray-900'
 } as const

@@ -79,9 +79,35 @@ export const useGameStore = defineStore('game', () => {
     return currentPlayer.value?.chips || 0
   })
 
-  // 更新游戏状态
-  const updateGameStatus = (status: GameStatus) => {
+  // 摊牌信息
+  const showdownData = ref<any>(null)
+  // 冠军信息
+  const gameWinner = ref<any>(null)
+
+  // 更新游戏状态（同时同步 roomInfo）
+  const updateGameStatus = (status: any) => {
     gameStatus.value = status
+    // 从牌桌状态同步房间信息
+    if (status.table_state) {
+      roomInfo.value.player_count = status.table_state.players.length
+      roomInfo.value.is_game_active = status.is_game_active
+      const host = status.table_state.players.find((p: any) => p.is_host)
+      if (host) {
+        roomInfo.value.host_username = host.username
+      }
+    }
+    // 同步摊牌数据
+    if (status.showdown) {
+      showdownData.value = status.showdown
+    } else {
+      showdownData.value = null
+    }
+    // 同步冠军数据
+    if (status.game_winner) {
+      gameWinner.value = status.game_winner
+    } else if (status.is_game_active) {
+      gameWinner.value = null
+    }
   }
 
   // 更新房间信息
@@ -154,6 +180,8 @@ export const useGameStore = defineStore('game', () => {
     roomInfo,
     chatMessages,
     unreadChatCount,
+    showdownData,
+    gameWinner,
     
     // 计算属性
     currentPlayer,

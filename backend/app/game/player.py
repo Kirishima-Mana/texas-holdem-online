@@ -50,10 +50,11 @@ class Player:
     def can_act(self) -> bool:
         """检查玩家是否可以行动"""
         return (
-            self.is_active and 
-            not self.is_folded and 
-            not self.is_all_in and 
-            self.is_connected
+            self.is_active and
+            not self.is_folded and
+            not self.is_all_in and
+            self.is_connected and
+            not self.has_acted
         )
     
     def bet(self, amount: int) -> bool:

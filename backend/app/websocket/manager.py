@@ -27,6 +27,7 @@ class WebSocketManager:
 
         # 游戏引擎
         self.game_engine = GameEngine()
+        self.game_engine.set_broadcast_callback(self.broadcast_game_state)
 
         # 广播锁，防止并发广播冲突
         self.broadcast_lock = asyncio.Lock()
@@ -93,17 +94,17 @@ class WebSocketManager:
         """处理接收到的消息"""
         websocket_id = str(id(websocket))
         user_id = self.connection_to_user.get(websocket_id)
-        
+
         if not user_id:
             logger.warning(f"收到未知连接的消息: {websocket_id}")
             return
-        
+
         try:
             data = json.loads(message)
             message_type = data.get("type")
             message_data = data.get("data", {})
-            
-            logger.debug(f"收到消息 from {user_id}: {message_type}")
+
+            logger.info(f"收到消息 from {user_id}: {message_type}")
             
             # 根据消息类型处理
             if message_type == "action":
@@ -121,9 +122,12 @@ class WebSocketManager:
             elif message_type == "start_game":
                 await self.handle_start_game(user_id)
             
+            elif message_type == "kick_player":
+                await self.handle_kick_player(user_id, message_data)
+
             elif message_type == "heartbeat":
                 await self.handle_heartbeat(user_id, websocket)
-            
+
             else:
                 logger.warning(f"未知消息类型: {message_type}")
                 await self.send_personal_message(
@@ -228,9 +232,12 @@ class WebSocketManager:
         position = data.get("position")
         buyin_type = data.get("buyin_type", "new")  # new, rebuy
 
+        logger.info(f"handle_join_table: user_id={user_id}, position={position}, buyin_type={buyin_type}")
+
         # 查找或创建玩家
         player = self.game_engine.table.get_player_by_user_id(user_id)
         if not player:
+            logger.info(f"handle_join_table: 创建新 Player for user_id={user_id}")
             info = self.user_info.get(user_id, {})
             username = info.get("username", f"User{user_id}")
             session_token = info.get("session_token", "")
@@ -357,8 +364,16 @@ class WebSocketManager:
     
     async def handle_start_game(self, user_id: int):
         """处理开始游戏请求"""
+        logger.info(f"handle_start_game: user_id={user_id}")
         player = self.game_engine.table.get_player_by_user_id(user_id)
-        if not player or not player.is_host:
+
+        if not player:
+            logger.warning(f"handle_start_game: user_id={user_id} 不在牌桌上")
+            await self.send_to_user(user_id, {"type": "error", "data": {"error": "你不在牌桌上"}})
+            return
+
+        if not player.is_host:
+            logger.warning(f"handle_start_game: user_id={user_id} 不是房主 (host={self.game_engine.table.host_user_id})")
             await self.send_to_user(
                 user_id,
                 {
@@ -392,6 +407,28 @@ class WebSocketManager:
                 }
             )
     
+    async def handle_kick_player(self, user_id: int, data: dict):
+        """房主踢出玩家"""
+        target_id = data.get("user_id")
+        if not target_id:
+            await self.send_to_user(user_id, {"type": "error", "data": {"error": "请指定要移除的玩家"}})
+            return
+
+        error = self.game_engine.kick_player(user_id, target_id)
+        if error:
+            await self.send_to_user(user_id, {"type": "error", "data": {"error": error}})
+        else:
+            await self.broadcast_message({
+                "type": "player_left",
+                "data": {
+                    "user_id": target_id,
+                    "username": "",
+                    "leave_type": "kicked",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            })
+            await self.broadcast_game_state()
+
     async def handle_heartbeat(self, user_id: int, websocket: WebSocket):
         """处理心跳"""
         await self.send_personal_message(

@@ -218,10 +218,13 @@ class Table:
             position = positions[idx]
             player = self.players.get(position)
             
-            if player and player.is_active and player.is_connected:
+            if player and player.is_active and player.is_connected and not player.is_all_in:
                 return position
-        
-        # 如果没有找到，返回第一个位置
+
+        # 没有可行动玩家：尝试找任何活跃连接的非 all-in 玩家
+        for p in self.players.values():
+            if p.is_active and p.is_connected and not p.is_all_in:
+                return p.position
         return positions[0]
     
     def collect_bets(self):
@@ -236,28 +239,30 @@ class Table:
         self.players_acted_this_round = 0
     
     def calculate_side_pots(self):
-        """计算边池（当有玩家全下时）"""
-        # 找出所有全下玩家的下注金额
-        all_in_amounts = sorted({
-            player.total_bet_this_round 
-            for player in self.players.values() 
-            if player.is_all_in
-        })
-        
-        if not all_in_amounts:
+        """计算边池 — 基于所有不同的下注金额层级"""
+        # 获取所有唯一的下注总额（排除 0）
+        amounts = sorted(set(
+            p.total_bet_this_round
+            for p in self.players.values()
+            if p.total_bet_this_round > 0
+        ))
+
+        if len(amounts) <= 1:
+            self.side_pots = []
             return
-        
-        # 计算每个边池
+
         self.side_pots = []
         previous_amount = 0
-        
-        for amount in all_in_amounts:
+
+        for amount in amounts:
             side_pot = 0
             for player in self.players.values():
+                if player.total_bet_this_round <= 0:
+                    continue
                 contribution = min(amount, player.total_bet_this_round) - previous_amount
                 if contribution > 0:
                     side_pot += contribution
-            
+
             if side_pot > 0:
                 self.side_pots.append({
                     "amount": side_pot,
@@ -266,7 +271,7 @@ class Table:
                         if p.total_bet_this_round >= amount and not p.is_folded
                     ]
                 })
-            
+
             previous_amount = amount
     
     def should_increase_blinds(self) -> bool:
