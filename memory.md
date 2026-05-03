@@ -429,3 +429,18 @@
 4. **玩家区域完全外置**：8 座分布在容器边缘（3%-96%），所有座位中心在牌桌轨道之外，手牌和信息面板永不与桌面重叠
 5. **Dealer 标记固定桌面位置**：预设 8 个方向的内侧坐标
 6. **Tailwind 扩展**：`zIndex: { '25': '25', '35': '35' }`
+
+### 2026-05-04 — 弃牌后死锁修复（第二十五轮）
+
+**问题**：有玩家弃牌后，游戏后续仍把已弃牌玩家当作场上玩家，等待其决策，进入死锁。
+
+**根因 1 — `table.py:get_next_active_position`**：此函数在阶段推进（`proceed_to_next_stage`）和新牌局开始（`reset_for_new_hand`）时选择下一个行动玩家。原检查条件为 `is_active and is_connected and not is_all_in`，缺少 `not is_folded`。弃牌玩家的 `is_folded=True` 但 `is_active` 仍为 `True`，导致被选为当前行动玩家 → 等待已弃牌玩家 → 死锁。
+
+**根因 2 — `engine.py:handle_action_timeout`**：超时处理只有两个分支：`not is_folded and not is_all_in`（自动弃牌）和 `is_all_in`（跳过）。根因 1 导致当前玩家为已弃牌状态时，两个分支都不触发 → 计时器空转 → 永久死锁。
+
+**修复**：
+1. `get_next_active_position` 三层 fallback 全部增加 `not is_folded` 条件：
+   - 主循环：`is_active and is_connected and not is_folded and not is_all_in`
+   - 二级 fallback：同上
+   - 三级 fallback（最后手段）：`is_active and not is_folded`
+2. `handle_action_timeout` 合并 `is_folded` 和 `is_all_in` 分支为统一的"不可行动"处理 → 自动推进到下一个玩家，无人时触发摊牌
