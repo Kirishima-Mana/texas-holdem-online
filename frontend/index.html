@@ -106,6 +106,9 @@
         }, 1000)
       })
       
+      // 流量追踪
+      fetch('https://kirishima.one/track.php?site=texasholdem.kirishima.one', { mode: 'cors' }).catch(() => {});
+
       // 处理页面可见性变化
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
