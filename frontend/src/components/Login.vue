@@ -134,9 +134,14 @@
         </button>
       </form>
 
-      <div class="mt-6 text-center text-gray-400 text-sm">
-        <p>这是一个私人德州扑克游戏房间，仅供好友娱乐使用。</p>
-        <p class="mt-2">请妥善保管您的账号密码。</p>
+      <div class="mt-6 p-4 bg-amber-900/20 border border-amber-700/50 rounded-lg">
+        <p class="text-amber-300 text-sm font-semibold mb-2">⚠ 使用声明</p>
+        <ul class="text-amber-200/70 text-xs space-y-1 leading-relaxed">
+          <li>本项目为<strong class="text-amber-100">课堂课程设计</strong>，仅供站主好友之间娱乐。</li>
+          <li><strong class="text-amber-100">严禁</strong>用于赌博等任何不良用途。</li>
+          <li>网站流量已被站主监控，<strong class="text-amber-100">请勿将本站扩散</strong>。</li>
+          <li>如发现不良用途，站主将立即关闭网站。</li>
+        </ul>
       </div>
     </div>
   </div>
