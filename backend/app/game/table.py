@@ -220,29 +220,35 @@ class Table:
         self.stage = "preflop"
     
     def get_next_active_position(self, start_position: int) -> int:
-        """获取下一个活跃玩家的位置"""
+        """获取下一个活跃玩家的位置（跳过弃牌、断线、all-in）"""
         positions = sorted(self.players.keys())
         if not positions:
             return 0
-        
+
         try:
             start_idx = positions.index(start_position)
         except ValueError:
             start_idx = -1
-        
+
         # 循环查找
         for i in range(len(positions)):
             idx = (start_idx + i + 1) % len(positions)
             position = positions[idx]
             player = self.players.get(position)
-            
-            if player and player.is_active and player.is_connected and not player.is_all_in:
+
+            if player and player.is_active and player.is_connected and not player.is_folded and not player.is_all_in:
                 return position
 
-        # 没有可行动玩家：尝试找任何活跃连接的非 all-in 玩家
+        # 没有可行动玩家：尝试找任何活跃连接的非弃牌非all-in玩家
         for p in self.players.values():
-            if p.is_active and p.is_connected and not p.is_all_in:
+            if p.is_active and p.is_connected and not p.is_folded and not p.is_all_in:
                 return p.position
+
+        # 最后手段：找任意活跃且非弃牌的玩家
+        for p in self.players.values():
+            if p.is_active and not p.is_folded:
+                return p.position
+
         return positions[0]
     
     def collect_bets(self):

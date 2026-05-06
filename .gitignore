@@ -27,6 +27,8 @@ env/
 backend/data/
 backend/logs/
 texas_holdem.db
+MEMORY.md
+WorksFoFar.md
 
 # ========================
 # 4. 操作系统与编辑器垃圾

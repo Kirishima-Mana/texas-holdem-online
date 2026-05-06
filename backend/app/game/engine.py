@@ -602,15 +602,23 @@ class GameEngine:
                     # 超时自动弃牌
                     await self.process_player_action(player.user_id, "fold")
                     logger.info(f"玩家 {player.username} 行动超时，自动弃牌")
-                elif player and player.is_all_in and self.is_game_active:
-                    # all-in 玩家不能行动，推进到下一个玩家
+                elif player and (player.is_folded or player.is_all_in):
+                    # 已弃牌或 all-in 玩家被错误设为当前玩家 → 推进到下一个
+                    logger.warning(f"当前玩家 {player.username} 处于不可行动状态 (folded={player.is_folded}, all_in={player.is_all_in})，跳过")
                     next_pos = self.table.get_next_player_position(player.position)
                     if next_pos is not None:
                         self.table.current_player_position = next_pos
                         self.reset_action_timer()
-                        logger.info(f"all-in 玩家 {player.username} 跳过，推进到位置 {next_pos}")
-                    else:
-                        logger.info(f"all-in 玩家 {player.username} 无后续玩家，等待回合完成")
+                        logger.info(f"推进到位置 {next_pos}")
+                    elif self.is_game_active:
+                        # 没有后续可行动玩家，检查是否只剩一人
+                        active = [p for p in self.table.get_active_players() if not p.is_folded]
+                        if len(active) <= 1:
+                            logger.info("只剩1名活跃玩家，进入摊牌")
+                            await self.proceed_to_showdown()
+                            await self._notify_state_change()
+                        else:
+                            logger.warning("无后续玩家但游戏未结束，可能死锁")
 
         except asyncio.CancelledError:
             pass
