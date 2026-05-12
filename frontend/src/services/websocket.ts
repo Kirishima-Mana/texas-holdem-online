@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import type { WSMessage, GameStatus, RoomInfo, ChatMessage, ActionRequest } from '@/types/game'
 import { useAuthStore } from '@/stores/auth'
 import { useGameStore } from '@/stores/game'
+import { playActionSound } from '@/utils/audio'
 
 class WebSocketService {
   private socket: WebSocket | null = null
@@ -175,6 +176,7 @@ class WebSocketService {
 
         case 'action_result':
           gameStore.addSystemMessage(message.data.message)
+          playActionSound(message.data.action)
           break
 
         case 'heartbeat_ack':

@@ -90,13 +90,6 @@
                   </div>
                 </div>
 
-                <!-- 庄家按钮 (D) -->
-                <div v-if="gameStore.gameStatus.table_state"
-                  :style="dealerBtnStyle()"
-                  class="absolute z-30 w-7 h-7 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center text-[10px] font-bold text-gray-700 shadow"
-                  style="transform: translate(-50%, -50%);">
-                  D
-                </div>
               </div><!-- /Felt -->
 
               <!-- 牌桌外玩家区域（8座，绝不对牌桌重叠） -->
@@ -148,6 +141,7 @@
                         {{ player.username }}
                       </span>
                       <span v-if="player.is_host" class="text-poker-gold text-[10px]" title="房主">★</span>
+                      <span v-if="gameStore.gameStatus.table_state?.dealer_position === player.position" class="w-4 h-4 rounded-full bg-white text-gray-800 text-[10px] font-bold flex items-center justify-center" title="庄家">D</span>
                     </div>
                     <div class="text-[11px] text-gray-300 mt-0.5 font-mono">{{ formatChips(player.chips) }}</div>
                     <div v-if="player.current_bet > 0" class="text-[11px] text-poker-gold mt-0.5 animate-chip-in font-semibold">
@@ -175,9 +169,10 @@
                   <template v-if="gameStore.isCurrentPlayer && gameStore.canAct">
                     <button @click="sendAction('fold')" class="btn btn-danger">弃牌</button>
                     <button v-if="gameStore.callAmount === 0" @click="sendAction('check')" class="btn btn-secondary">过牌</button>
+                    <button v-if="gameStore.callAmount === 0" @click="showBetDialog = true" class="btn btn-primary">下注</button>
                     <button v-else @click="sendAction('call')" class="btn btn-secondary">跟注 {{ gameStore.callAmount.toLocaleString() }}</button>
-                    <button @click="showRaiseDialog = true" class="btn btn-primary">加注</button>
-                    <button @click="sendAction('all_in')" class="btn btn-success">全下 {{ gameStore.maxRaiseAmount.toLocaleString() }}</button>
+                    <button v-if="gameStore.callAmount > 0" @click="showRaiseDialog = true" class="btn btn-primary">加注</button>
+                    <button @click="sendAction('all_in')" class="btn btn-success">全下 {{ gameStore.maxBetAmount.toLocaleString() }}</button>
                   </template>
                   <template v-else>
                     <span class="text-gray-400 py-2 text-sm">
@@ -200,22 +195,35 @@
         <!-- 右侧面板 -->
         <div class="space-y-4 order-1 lg:order-2">
           <!-- 聊天 -->
-          <div class="card p-3 h-64 flex flex-col">
+          <div class="card p-3 flex flex-col" style="height: 12rem">
             <div class="flex justify-between items-center mb-2">
               <h3 class="text-sm font-bold">聊天</h3>
               <button @click="showRules = true" class="text-xs text-poker-gold hover:text-yellow-300 border border-poker-gold/40 rounded px-2 py-0.5">规则说明</button>
             </div>
             <div class="flex-1 overflow-y-auto mb-2 space-y-1 text-sm" ref="chatContainer">
               <div v-for="msg in gameStore.chatMessages" :key="msg.timestamp"
-                :class="['p-2 rounded', msg.is_system ? 'bg-gray-800/40 text-gray-400' : 'bg-gray-800 text-gray-200']">
-                <span v-if="!msg.is_system" class="font-bold text-poker-green text-xs">{{ msg.username }} </span>
+                class="p-2 rounded bg-gray-800 text-gray-200">
+                <span class="font-bold text-poker-green text-xs">{{ msg.username }} </span>
                 <span class="text-xs">{{ msg.message }}</span>
               </div>
+              <div v-if="gameStore.chatMessages.length === 0" class="text-gray-500 text-xs text-center py-2">暂无消息</div>
             </div>
             <form @submit.prevent="sendChat" class="flex">
               <input v-model="chatMessage" type="text" placeholder="输入..." class="input flex-1 rounded-r-none text-sm py-1" />
               <button type="submit" class="btn btn-primary rounded-l-none text-sm py-1 px-3">发</button>
             </form>
+          </div>
+
+          <!-- 动态通知 -->
+          <div class="card p-3 flex flex-col" style="height: 10rem">
+            <h3 class="text-sm font-bold mb-2 text-gray-400">动态</h3>
+            <div class="flex-1 overflow-y-auto space-y-0.5 text-xs" ref="systemContainer">
+              <div v-for="msg in gameStore.systemMessages" :key="msg.timestamp"
+                class="px-2 py-1 rounded bg-gray-800/40 text-gray-400">
+                {{ msg.message }}
+              </div>
+              <div v-if="gameStore.systemMessages.length === 0" class="text-gray-600 text-xs text-center py-2">暂无动态</div>
+            </div>
           </div>
 
           <!-- 信息面板 -->
@@ -247,10 +255,10 @@
     <!-- 加注对话框 -->
     <div v-if="showRaiseDialog" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
       <div class="card w-full max-w-sm">
-        <h3 class="text-xl font-bold mb-3">加注</h3>
+        <h3 class="text-xl font-bold mb-3">加注到</h3>
         <div class="space-y-3">
           <input v-model.number="raiseAmount" type="number" :min="gameStore.minRaiseAmount" :max="gameStore.maxRaiseAmount"
-            class="input w-full" @keyup.enter="confirmRaise" placeholder="输入加注金额" />
+            class="input w-full" @keyup.enter="confirmRaise" placeholder="输入加注到的目标金额" />
           <div class="grid grid-cols-3 gap-1.5">
             <button v-for="amount in quickRaiseAmounts" :key="amount" @click="raiseAmount = amount"
               :class="['btn text-xs py-1', raiseAmount === amount ? 'btn-primary' : 'btn-secondary']">{{ amount }}</button>
@@ -258,6 +266,25 @@
           <div class="flex justify-end space-x-2">
             <button @click="showRaiseDialog = false" class="btn btn-secondary text-sm">取消</button>
             <button @click="confirmRaise" :disabled="!isValidRaiseAmount" class="btn btn-primary text-sm">确认加注</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 下注对话框 -->
+    <div v-if="showBetDialog" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div class="card w-full max-w-sm">
+        <h3 class="text-xl font-bold mb-3">下注</h3>
+        <div class="space-y-3">
+          <input v-model.number="betAmount" type="number" :min="gameStore.minBetAmount" :max="gameStore.maxBetAmount"
+            class="input w-full" @keyup.enter="confirmBet" placeholder="输入下注金额" />
+          <div class="grid grid-cols-3 gap-1.5">
+            <button v-for="amount in quickBetAmounts" :key="amount" @click="betAmount = amount"
+              :class="['btn text-xs py-1', betAmount === amount ? 'btn-primary' : 'btn-secondary']">{{ amount }}</button>
+          </div>
+          <div class="flex justify-end space-x-2">
+            <button @click="showBetDialog = false" class="btn btn-secondary text-sm">取消</button>
+            <button @click="confirmBet" :disabled="!isValidBetAmount" class="btn btn-primary text-sm">确认下注</button>
           </div>
         </div>
       </div>
@@ -366,10 +393,13 @@ const authStore = useAuthStore()
 const gameStore = useGameStore()
 
 const chatContainer = ref<HTMLElement>()
+const systemContainer = ref<HTMLElement>()
 const chatMessage = ref('')
 const showRaiseDialog = ref(false)
+const showBetDialog = ref(false)
 const showRules = ref(false)
 const raiseAmount = ref(0)
+const betAmount = ref(0)
 
 const quickRaiseAmounts = computed(() => {
   const min = gameStore.minRaiseAmount
@@ -386,6 +416,24 @@ const quickRaiseAmounts = computed(() => {
 const isValidRaiseAmount = computed(() => {
   return raiseAmount.value >= gameStore.minRaiseAmount &&
          raiseAmount.value <= gameStore.maxRaiseAmount
+})
+
+const quickBetAmounts = computed(() => {
+  const min = gameStore.minBetAmount
+  const max = gameStore.maxBetAmount
+  const pot = gameStore.gameStatus.table_state?.pot_amount || 0
+  return [
+    min,
+    min * 2,
+    Math.floor(pot / 2),
+    pot,
+    max
+  ].filter(amount => amount >= min && amount <= max)
+})
+
+const isValidBetAmount = computed(() => {
+  return betAmount.value >= gameStore.minBetAmount &&
+         betAmount.value <= gameStore.maxBetAmount
 })
 
 const roomInfo = computed(() => gameStore.roomInfo)
@@ -458,22 +506,6 @@ const actionTagColor = (player: any) => {
   return 'bg-orange-500'
 }
 
-const dealerBtnStyle = () => {
-  const pos = gameStore.gameStatus.table_state?.dealer_position ?? 0
-  // Dealer 按钮在桌面上，靠近对应玩家座位方向的桌边
-  const btnPositions = [
-    { top: '18%', left: '50%' },
-    { top: '24%', left: '76%' },
-    { top: '50%', left: '78%' },
-    { top: '74%', left: '76%' },
-    { top: '80%', left: '50%' },
-    { top: '74%', left: '24%' },
-    { top: '50%', left: '22%' },
-    { top: '24%', left: '24%' },
-  ]
-  return btnPositions[pos % 8]
-}
-
 const getSeatStyle = (position: number) => {
   // 8 座围绕牌桌，完全在桌外（桌面 rail 占 14%-86%）
   const positions = [
@@ -508,6 +540,14 @@ const confirmRaise = () => {
   }
 }
 
+const confirmBet = () => {
+  if (isValidBetAmount.value) {
+    sendAction('bet', betAmount.value)
+    showBetDialog.value = false
+    betAmount.value = 0
+  }
+}
+
 const sendChat = () => {
   if (chatMessage.value.trim()) {
     wsService.sendChatMessage(chatMessage.value.trim())
@@ -534,7 +574,16 @@ const scrollChatToBottom = () => {
   })
 }
 
+const scrollSystemToBottom = () => {
+  nextTick(() => {
+    if (systemContainer.value) {
+      systemContainer.value.scrollTop = systemContainer.value.scrollHeight
+    }
+  })
+}
+
 watch(() => gameStore.chatMessages.length, scrollChatToBottom)
+watch(() => gameStore.systemMessages.length, scrollSystemToBottom)
 
 // 调试：监听摊牌数据
 watch(() => gameStore.showdownData, (data) => {

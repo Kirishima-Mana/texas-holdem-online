@@ -73,7 +73,7 @@ export interface WSMessage {
   data: any
 }
 
-export type PlayerAction = 'fold' | 'check' | 'call' | 'raise' | 'all_in'
+export type PlayerAction = 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'all_in'
 
 export interface ActionRequest {
   action: PlayerAction

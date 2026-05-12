@@ -28,6 +28,9 @@ export const useGameStore = defineStore('game', () => {
   const chatMessages = ref<ChatMessage[]>([])
   const unreadChatCount = ref(0)
 
+  // 系统通知消息（独立于聊天）
+  const systemMessages = ref<ChatMessage[]>([])
+
   // 当前玩家信息
   const currentPlayer = computed(() => {
     if (!gameStatus.value.table_state) return null
@@ -57,26 +60,42 @@ export const useGameStore = defineStore('game', () => {
     return !currentPlayer.value.is_folded && !currentPlayer.value.is_all_in
   })
 
+  // 当前轮最大下注
+  const currentMaxBet = computed(() => {
+    if (!gameStatus.value.table_state) return 0
+    return Math.max(
+      ...gameStatus.value.table_state.players.map(p => p.current_bet)
+    )
+  })
+
   // 需要跟注的金额
   const callAmount = computed(() => {
     if (!currentPlayer.value || !gameStatus.value.table_state) return 0
-    
-    const currentMaxBet = Math.max(
-      ...gameStatus.value.table_state.players.map(p => p.current_bet)
-    )
-    
-    return Math.max(0, currentMaxBet - currentPlayer.value.current_bet)
+    return Math.max(0, currentMaxBet.value - currentPlayer.value.current_bet)
   })
 
-  // 最小加注金额
+  // 最小下注金额（第一个下注的玩家）
+  const minBetAmount = computed(() => {
+    if (!gameStatus.value.table_state) return 0
+    return gameStatus.value.table_state.big_blind
+  })
+
+  // 最大下注金额（玩家可投入的总筹码）
+  const maxBetAmount = computed(() => {
+    if (!currentPlayer.value) return 0
+    return currentPlayer.value.chips + currentPlayer.value.current_bet
+  })
+
+  // 最小加注到金额（前方玩家下注的2倍）
   const minRaiseAmount = computed(() => {
     if (!gameStatus.value.table_state) return 0
-    return gameStatus.value.table_state.big_blind * 2
+    return Math.max(currentMaxBet.value * 2, gameStatus.value.table_state.big_blind * 2)
   })
 
-  // 最大加注金额（玩家筹码）
+  // 最大加注到金额（玩家可投入的总筹码）
   const maxRaiseAmount = computed(() => {
-    return currentPlayer.value?.chips || 0
+    if (!currentPlayer.value) return 0
+    return currentPlayer.value.chips + currentPlayer.value.current_bet
   })
 
   // 摊牌信息
@@ -128,15 +147,18 @@ export const useGameStore = defineStore('game', () => {
     // 这里需要根据实际UI状态来判断，暂时先不实现
   }
 
-  // 添加系统消息
+  // 添加系统消息（进入独立的通知列表，不混入聊天）
   const addSystemMessage = (message: string) => {
-    addChatMessage({
+    systemMessages.value.push({
       user_id: 0,
       username: '系统',
       message,
       timestamp: new Date().toISOString(),
       is_system: true
     })
+    if (systemMessages.value.length > 200) {
+      systemMessages.value = systemMessages.value.slice(-100)
+    }
   }
 
   // 清空未读计数
@@ -179,6 +201,7 @@ export const useGameStore = defineStore('game', () => {
     gameStatus,
     roomInfo,
     chatMessages,
+    systemMessages,
     unreadChatCount,
     showdownData,
     gameWinner,
@@ -189,6 +212,8 @@ export const useGameStore = defineStore('game', () => {
     isCurrentPlayer,
     canAct,
     callAmount,
+    minBetAmount,
+    maxBetAmount,
     minRaiseAmount,
     maxRaiseAmount,
     

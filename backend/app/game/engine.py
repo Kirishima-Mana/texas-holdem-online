@@ -101,12 +101,12 @@ class GameEngine:
     ) -> Dict:
         """
         处理玩家行动
-        
+
         Args:
             user_id: 玩家ID
-            action: 行动类型 (fold, check, call, raise, all_in)
-            amount: 加注金额（仅 raise 时需要）
-        
+            action: 行动类型 (fold, check, call, bet, raise, all_in)
+            amount: 下注/加注的目标金额（仅 bet/raise 时需要）
+
         Returns:
             处理结果字典
         """
@@ -141,17 +141,52 @@ class GameEngine:
                 result["message"] = f"{player.username} 跟注 {call_amount}"
             else:
                 return {"success": False, "error": "筹码不足"}
-        
+
+        elif action == "bet":
+            if amount is None:
+                return {"success": False, "error": "需要指定下注金额"}
+
+            call_amount = player.get_call_amount(self.table.current_max_bet)
+            if call_amount > 0:
+                return {"success": False, "error": "当前不能下注，请选择跟注或加注"}
+
+            min_bet = self.table.big_blind
+            if amount < min_bet:
+                return {"success": False, "error": f"下注金额必须至少为 {min_bet}"}
+
+            if amount > player.chips + player.current_bet:
+                return {"success": False, "error": "筹码不足"}
+
+            actual_bet = amount - player.current_bet
+            if actual_bet <= 0:
+                return {"success": False, "error": "下注金额必须大于当前已下注金额"}
+
+            if player.bet(actual_bet):
+                self.table.current_max_bet = player.current_bet
+                result["message"] = f"{player.username} 下注 {player.current_bet}"
+            else:
+                return {"success": False, "error": "筹码不足"}
+
         elif action == "raise":
             if amount is None:
                 return {"success": False, "error": "需要指定加注金额"}
-            
-            min_raise = self.table.big_blind * 2
-            if amount < min_raise:
-                return {"success": False, "error": f"加注金额必须至少为 {min_raise}"}
-            
-            total_needed = player.get_call_amount(self.table.current_max_bet) + amount
-            if player.bet(total_needed):
+
+            call_amount = player.get_call_amount(self.table.current_max_bet)
+            if call_amount <= 0:
+                return {"success": False, "error": "当前没有需要跟注的金额，请选择下注"}
+
+            min_raise_to = self.table.current_max_bet * 2
+            if amount < min_raise_to:
+                return {"success": False, "error": f"加注金额至少需要 {min_raise_to}"}
+
+            if amount > player.chips + player.current_bet:
+                return {"success": False, "error": "筹码不足"}
+
+            if amount <= self.table.current_max_bet:
+                return {"success": False, "error": "加注金额必须大于当前最高下注"}
+
+            actual_raise = amount - player.current_bet
+            if player.bet(actual_raise):
                 self.table.current_max_bet = player.current_bet
                 result["message"] = f"{player.username} 加注到 {player.current_bet}"
             else:
@@ -174,7 +209,7 @@ class GameEngine:
 
         # 如果是加注或全下（增加了当前最大下注），重置其他在线玩家的 has_acted
         # 因为他们需要对新的下注额做出回应；断开/全下玩家排除
-        if action in ("raise", "all_in"):
+        if action in ("bet", "raise", "all_in"):
             for p in self.table.get_active_players():
                 if p.position != player.position and not p.is_all_in and p.is_connected:
                     p.has_acted = False

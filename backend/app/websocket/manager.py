@@ -163,7 +163,7 @@ class WebSocketManager:
         amount = data.get("amount")
         
         # 验证行动
-        if action not in ["fold", "check", "call", "raise", "all_in"]:
+        if action not in ["fold", "check", "call", "bet", "raise", "all_in"]:
             await self.send_to_user(
                 user_id,
                 {
